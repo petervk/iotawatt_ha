@@ -1,0 +1,64 @@
+name: Bug report
+description: Something does not work with this IoTaWatt fork
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is a fork maintained for one home setup, with no support from Home Assistant or the IoTaWatt project. Please do not report problems with this fork to them.
+
+        The line `pip list | grep -i iotawatt` below is the single most useful thing you can include. Installs that began with the original `kuralabs/iotawatt_ha` can have an old `iotawattpy` package that shadows the library this fork needs.
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before you report
+      options:
+        - label: I have read "Known problems" in the README.
+          required: true
+        - label: I am reporting a problem with this fork, not with Home Assistant core or the IoTaWatt device.
+          required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      placeholder: "2026.10.2"
+    validations:
+      required: true
+  - type: input
+    id: fork_version
+    attributes:
+      label: Fork version
+      description: Shown in HACS, or `version` in `custom_components/iotawatt/manifest.json`.
+      placeholder: "2.1.2"
+    validations:
+      required: true
+  - type: dropdown
+    id: origin
+    attributes:
+      label: How did you start using IoTaWatt in Home Assistant?
+      options:
+        - Core integration, then this fork
+        - The original kuralabs/iotawatt_ha, then this fork
+        - This fork from the start
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: pip_list
+    attributes:
+      label: Output of `pip list | grep -i iotawatt`
+      description: Run it in the Home Assistant container, for example `docker exec homeassistant pip list | grep -i iotawatt`.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log lines
+      description: Search the Home Assistant log for `iotawatt`. Remove anything private.
+      render: text
