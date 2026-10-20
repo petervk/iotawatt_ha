@@ -1,0 +1,37 @@
+# After a release is published, check that the tag matches the version in
+# custom_components/iotawatt/manifest.json. HACS and users rely on the two
+# being the same. A failure here means: delete the release and tag, fix the
+# manifest version, and publish again.
+name: Release check
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to check manually, for example v2.1.1"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  version-matches-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+      - name: Compare tag and manifest version
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          manifest=$(jq -r .version custom_components/iotawatt/manifest.json)
+          tag="${TAG#v}"
+          echo "Tag: $TAG, manifest version: $manifest"
+          if [ "$manifest" != "$tag" ]; then
+            echo "::error::Release tag $TAG does not match manifest version $manifest"
+            exit 1
+          fi
+          echo "OK: tag and manifest version match."

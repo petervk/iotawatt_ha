@@ -26,7 +26,7 @@
   "issues": {
     "outdated_library": {
       "title": "Outdated IoTaWatt library",
-      "description": "An old copy of the IoTaWatt library (the `iotawattpy` package installed by the original `kuralabs/iotawatt_ha` integration) is loaded instead of `ha-iotawattpy`. The integration is working around it, so nothing needs to be done urgently. To remove the old package, see the \"Outdated library\" section of the README at https://github.com/petervk/iotawatt_ha."
+      "description": "An old copy of the IoTaWatt library (the `iotawattpy` package installed by the original `kuralabs/iotawatt_ha` integration) is loaded instead of `ha-iotawattpy`. The integration is working around it, so nothing needs to be done urgently. To remove the old package, see the \"Outdated library\" section of the README: {readme_url}"
     }
   }
 }

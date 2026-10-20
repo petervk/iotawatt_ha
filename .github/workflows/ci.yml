@@ -1,0 +1,50 @@
+# Runs on every pull request and every push to main.
+# - tests: the pytest suite on Python 3.14 against the newest Home Assistant
+#   that pytest-homeassistant-custom-component supports.
+# - hassfest: Home Assistant's own validation of a custom integration
+#   (manifest, translations, imports).
+# - hacs: HACS repository validation (hacs.json, structure, topics).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Install test requirements
+        run: pip install -r requirements_test.txt
+      - name: Show versions
+        run: |
+          python --version
+          python -c "import homeassistant.const as c; print('Home Assistant', c.__version__)"
+          pip list 2>/dev/null | grep -i iotawatt
+      - name: Run tests
+        run: python -m pytest -q -p no:cacheprovider
+
+  hassfest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: home-assistant/actions/hassfest@master
+
+  hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hacs/action@main
+        with:
+          category: integration
+          # Only needed for the default HACS store; this is a custom repository.
+          ignore: brands
