@@ -30,7 +30,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Find the latest stable Home Assistant release
         id: ver
@@ -79,7 +79,7 @@ jobs:
           fi
           cat changes.txt >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         if: steps.ver.outputs.same == 'false'
         with:
           python-version: "3.14"
