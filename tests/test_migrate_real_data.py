@@ -21,7 +21,6 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.iotawatt.const import DOMAIN
 from custom_components.iotawatt.migrate import async_migrate_unique_ids
-
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
@@ -29,16 +28,46 @@ MAC = "AABBCCDDEEFF"
 
 # channel, library name, power entity object id, energy entity object id
 INPUTS = [
-    (3, "hvac_heat_pump_iotawatt", "hvac_heat_pump_iotawatt", "hvac_heat_pump_iotawatt_wh"),
+    (
+        3,
+        "hvac_heat_pump_iotawatt",
+        "hvac_heat_pump_iotawatt",
+        "hvac_heat_pump_iotawatt_wh",
+    ),
     (4, "dryer_iotawatt", "dryer_iotawatt", "dryer_iotawatt_wh"),
     (5, "garage_iotawatt", "garage_iotawatt", "garage_iotawatt_wh"),
     (6, "dishwasher_iotawatt", "dishwasher_iotawatt", "dishwasher_iotawatt_wh"),
-    (7, "kitchen_range_hood_iotawatt", "kitchen_range_hood_iotawatt", "kitchen_range_hood_iotawatt_wh"),
+    (
+        7,
+        "kitchen_range_hood_iotawatt",
+        "kitchen_range_hood_iotawatt",
+        "kitchen_range_hood_iotawatt_wh",
+    ),
     (8, "evse_iotawatt", "evse_power", "evse_energy"),
-    (9, "basement_dishwasher_iotawatt", "basement_dishwasher_iotawatt", "basement_dishwasher_iotawatt_wh"),
-    (10, "hvac_electric_heat_iotawatt", "hvac_electric_heat_iotawatt", "hvac_electric_heat_iotawatt_wh"),
-    (11, "hvac_water_heater_iotawatt", "hvac_water_heater_iotawatt", "hvac_water_heater_iotawatt_wh"),
-    (12, "basement_range_iotawatt", "basement_range_iotawatt", "basement_range_iotawatt_wh"),
+    (
+        9,
+        "basement_dishwasher_iotawatt",
+        "basement_dishwasher_iotawatt",
+        "basement_dishwasher_iotawatt_wh",
+    ),
+    (
+        10,
+        "hvac_electric_heat_iotawatt",
+        "hvac_electric_heat_iotawatt",
+        "hvac_electric_heat_iotawatt_wh",
+    ),
+    (
+        11,
+        "hvac_water_heater_iotawatt",
+        "hvac_water_heater_iotawatt",
+        "hvac_water_heater_iotawatt_wh",
+    ),
+    (
+        12,
+        "basement_range_iotawatt",
+        "basement_range_iotawatt",
+        "basement_range_iotawatt_wh",
+    ),
     (13, "range_iotawatt", "range_iotawatt", "range_iotawatt_wh"),
     (14, "solar_iotawatt", "solar_iotawatt", "solar_iotawatt_wh"),
 ]
@@ -234,7 +263,9 @@ async def test_wh_last_and_stale_entries_are_untouched(hass: HomeAssistant) -> N
     async_migrate_unique_ids(hass, entry, _live_sensors())
 
     untouched = dict(_expected_last_ids())
-    untouched.update({object_id: f"{MAC}_{suffix}" for suffix, object_id in STALE_PLAIN})
+    untouched.update(
+        {object_id: f"{MAC}_{suffix}" for suffix, object_id in STALE_PLAIN}
+    )
     assert len(untouched) == 35
     for object_id, unique_id in untouched.items():
         entity = registry.async_get(f"sensor.{object_id}")

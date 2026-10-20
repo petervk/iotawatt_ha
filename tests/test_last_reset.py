@@ -10,8 +10,8 @@ from datetime import datetime, timedelta
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-import pytest
 from iotawattpy.sensor import Sensor
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.components.recorder.common import (
     async_wait_recording_done,
@@ -20,11 +20,7 @@ from pytest_homeassistant_custom_component.components.recorder.common import (
 )
 
 from custom_components.iotawatt.const import DOMAIN
-from custom_components.iotawatt.sensor import (
-    ENTITY_DESCRIPTION_KEY_MAP,
-    IotaWattSensor,
-)
-
+from custom_components.iotawatt.sensor import ENTITY_DESCRIPTION_KEY_MAP, IotaWattSensor
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util

@@ -4,6 +4,7 @@
 # - hassfest: Home Assistant's own validation of a custom integration
 #   (manifest, translations, imports).
 # - hacs: HACS repository validation (hacs.json, structure, topics).
+# - lint: ruff check and ruff format --check, using ruff.toml.
 name: CI
 
 on:
@@ -48,3 +49,18 @@ jobs:
           category: integration
           # Only needed for the default HACS store; this is a custom repository.
           ignore: brands
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      # Pinned so a new ruff release cannot turn a green build red. Bump on purpose.
+      - name: Install ruff
+        run: pip install ruff==0.17.1
+      - name: Lint
+        run: ruff check .
+      - name: Format check
+        run: ruff format --check .

@@ -1,0 +1,35 @@
+# Lint and format settings, written to follow the conventions of Home Assistant
+# core (import order, quote style, async hygiene). This is an approximation of
+# core's pyproject.toml, not a copy, so it will not match core rule for rule.
+target-version = "py314"
+line-length = 88
+
+[lint]
+select = [
+    "ASYNC",  # blocking calls in async code
+    "B",      # bugbear
+    "C4",     # comprehensions
+    "E",      # pycodestyle errors
+    "F",      # pyflakes
+    "G",      # logging format
+    "I",      # import order
+    "LOG",    # logging usage
+    "PERF",   # performance
+    "PT",     # pytest style
+    "RUF",    # ruff-specific
+    "SIM",    # simplifications
+    "TID",    # tidy imports
+    "UP",     # pyupgrade
+    "W",      # pycodestyle warnings
+]
+ignore = [
+    "E501",  # line length is left to the formatter
+]
+
+[lint.isort]
+# Same layout as core: homeassistant is first-party, sorted with the custom
+# component package, plain "import x" sorted among "from x import y".
+force-sort-within-sections = true
+known-first-party = ["custom_components", "homeassistant"]
+combine-as-imports = true
+split-on-trailing-comma = false
