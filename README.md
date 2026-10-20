@@ -57,6 +57,21 @@ Home Assistant requires an entity's unique ID to be unique, consistent and immut
 - **Limited testing.** It is maintained for one home setup. Back up before installing, and keep a copy of any previous `custom_components/iotawatt` folder so you can roll back.
 - **It needs a recent Python.** The `ha-iotawattpy` 0.3.0 library requires Python 3.13.
 
+### Outdated library (installs that started from `kuralabs/iotawatt_ha`)
+
+The original integration installed an old `iotawattpy` 0.1.0 package. It contains the same Python module as `ha-iotawattpy`, which this integration needs, and Home Assistant never removes old packages. On such installs the old code can end up loaded instead of the new one.
+
+Since v2.1.1 the integration detects this and works around it, so it keeps running and you do not have to do anything. A Repair notice ("Outdated IoTaWatt library") tells you it happened. It is harmless, but you are running older library code than core does.
+
+To remove the old package (optional, advanced), run this inside the Home Assistant core container, then restart Home Assistant:
+
+```
+docker exec homeassistant pip uninstall -y iotawattpy
+docker exec homeassistant pip install --force-reinstall --no-deps ha-iotawattpy==0.3.0
+```
+
+Versions 2.1.0 and earlier fail to start (or silently use the old code) on such installs, so use v2.1.1 or newer.
+
 A proper fix would be a persistent ID for each output in the IoTaWatt firmware. That does not exist today.
 
 ## Installing

@@ -13,6 +13,7 @@ from homeassistant.helpers import httpx_client
 from homeassistant.helpers.debounce import Debouncer
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
+from .compat import api_options, filter_sensors
 from .const import CONNECTION_ERRORS
 
 _LOGGER = logging.getLogger(__name__)
@@ -66,7 +67,7 @@ class IotawattUpdater(DataUpdateCoordinator):
                 self.config_entry.data.get(CONF_USERNAME),
                 self.config_entry.data.get(CONF_PASSWORD),
                 integratedInterval="d",
-                includeNonTotalSensors=False,
+                **api_options(),
             )
             try:
                 is_authenticated = await api.connect()
@@ -83,4 +84,4 @@ class IotawattUpdater(DataUpdateCoordinator):
         except CONNECTION_ERRORS as err:
             raise UpdateFailed("Connection failed") from err
         self._last_run = None
-        return self.api.getSensors()
+        return filter_sensors(self.api.getSensors())

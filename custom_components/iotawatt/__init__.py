@@ -3,6 +3,7 @@
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
+from .compat import async_check_library
 from .coordinator import IotawattConfigEntry, IotawattUpdater
 from .migrate import async_migrate_unique_ids
 
@@ -11,6 +12,7 @@ PLATFORMS = [Platform.SENSOR]
 
 async def async_setup_entry(hass: HomeAssistant, entry: IotawattConfigEntry) -> bool:
     """Set up iotawatt from a config entry."""
+    async_check_library(hass)
     coordinator = IotawattUpdater(hass, entry)
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
