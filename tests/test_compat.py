@@ -160,7 +160,9 @@ async def test_repair_issue_created_and_cleared(
     registry = ir.async_get(hass)
     monkeypatch.setattr(compat, "Iotawatt", _OldApi)
     async_check_library(hass)
-    assert registry.async_get_issue(DOMAIN, ISSUE_ID) is not None
+    issue = registry.async_get_issue(DOMAIN, ISSUE_ID)
+    assert issue is not None
+    assert issue.translation_placeholders == {"readme_url": compat.README_URL}
 
     monkeypatch.setattr(compat, "Iotawatt", _NewApi)
     async_check_library(hass)

@@ -33,6 +33,8 @@ ISSUE_ID = "outdated_library"
 
 OPTION = "includeNonTotalSensors"
 
+README_URL = "https://github.com/petervk/iotawatt_ha#outdated-library-installs-that-started-from-kuralabsiotawatt_ha"
+
 
 def library_supports_option() -> bool:
     """Return True if the loaded library accepts includeNonTotalSensors."""
@@ -76,4 +78,5 @@ def async_check_library(hass: HomeAssistant) -> None:
         is_fixable=False,
         severity=ir.IssueSeverity.WARNING,
         translation_key=ISSUE_ID,
+        translation_placeholders={"readme_url": README_URL},
     )
