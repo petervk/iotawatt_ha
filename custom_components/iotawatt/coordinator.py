@@ -66,6 +66,7 @@ class IotawattUpdater(DataUpdateCoordinator):
                 self.config_entry.data.get(CONF_USERNAME),
                 self.config_entry.data.get(CONF_PASSWORD),
                 integratedInterval="d",
+                includeNonTotalSensors=False,
             )
             try:
                 is_authenticated = await api.connect()

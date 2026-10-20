@@ -12,13 +12,34 @@ Core only gives unique IDs to inputs, which means outputs cannot be renamed, ass
 
 ## What is different from core
 
-- Unique ID for every sensor, formatted `{MAC}_{Type}_{name}`. This matches the ID format of the earlier `kuralabs/iotawatt_ha` 1.0.0 release, so entities from that version are preserved when you upgrade.
+The only functional change is that **outputs also get a unique ID and a device**. Everything else is identical to core (`ha-iotawattpy` 0.3.0, config entry `runtime_data`, reactive power device class, guarded updates, no per-period `_wh_last` sensors).
+
+- **Inputs** use exactly the same unique ID as core: `{mac}-input-{channel}-{unit}`.
+- **Outputs** use `{MAC}_Output_{name}`, the ID format of `kuralabs/iotawatt_ha` 1.0.0. This is the one thing core does not do.
 - All sensors are attached to the IoTaWatt device.
-- Per-period (`_last`) energy sensors are kept. Core hides them.
 
-Everything else tracks the core integration (`ha-iotawattpy` 0.3.0, config entry `runtime_data`, reactive power device class, guarded updates).
+The output ID is based on the output name configured on the IoTaWatt, so renaming an output on the device creates a new entity.
 
-Note that the ID is based on the channel name configured on the IoTaWatt, so renaming a channel on the device creates a new entity.
+### Breaking changes from `kuralabs/iotawatt_ha` 1.0.0
+
+- **The per-period `_wh_last` energy sensors are no longer created**, matching core. Existing `_wh_last` entities are not deleted by this integration; they remain in the entity registry and show as unavailable until you remove them yourself. Check that nothing (dashboards, automations, alerts, YAML) uses them first.
+- **Input unique IDs are rewritten to core's format on startup.** Entity IDs, names, history and settings are kept.
+
+### Migration
+
+Supported starting point: **`kuralabs/iotawatt_ha` 1.0.0 only.** Other versions are untested.
+
+On startup, the integration rewrites the unique ID of each existing input sensor from `{MAC}_Input_{name}[.wh]` to core's `{mac}-input-{channel}-{unit}`. The migration:
+
+- changes unique IDs only, never entity IDs;
+- never deletes anything;
+- skips and logs a warning when the new ID already exists on another entity (for example, duplicated entities from an earlier channel rename), so you can sort those out by hand;
+- leaves renamed or no-longer-present channels alone;
+- is safe to run repeatedly.
+
+Back up before upgrading. Old versions of this integration do not recognise the new input IDs, so rolling back means restoring the backup.
+
+If you later switch to core, input sensors keep their entities and history. Only outputs are affected, because core does not create them.
 
 ## Known problems
 
@@ -29,7 +50,7 @@ Home Assistant requires an entity's unique ID to be unique, consistent and immut
 ### What can go wrong
 
 - **Renaming a channel or output on the IoTaWatt creates a new entity.** The old entity is left behind, so its history, dashboards, automations, helpers and Energy dashboard entries stop updating until you repoint them. Rename the entity in Home Assistant instead, and avoid renaming channels on the device.
-- **Leaving this fork loses continuity.** Core uses a different ID format for inputs (`{mac}-input-{channel}-{unit}`) and none for outputs. Switching back to core creates new entities for inputs and unattached entities for outputs.
+- **Leaving this fork affects outputs.** Core does not create output sensors, so after switching back to core they become unavailable orphans. Inputs carry over, because they use core's ID format.
 - **It replaces the core integration** (same `iotawatt` domain). Home Assistant will log a warning that a custom integration is not tested.
 - **It tracks one core release.** The code is ported from core 2026.10.2 and is not synced automatically. A future Home Assistant release can break it until the fork is updated, and core fixes and improvements arrive only when they are ported.
 - **No support from Home Assistant or the IoTaWatt project.** Do not report problems with this fork to them.

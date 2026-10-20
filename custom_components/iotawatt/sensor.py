@@ -32,6 +32,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import VOLT_AMPERE_REACTIVE_HOURS
 from .coordinator import IotawattConfigEntry, IotawattUpdater
+from .unique_id import sensor_unique_id
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -164,11 +165,10 @@ class IotaWattSensor(CoordinatorEntity[IotawattUpdater], SensorEntity):
         super().__init__(coordinator=coordinator)
 
         self._key = key
-        # Fork behaviour: every sensor (inputs AND outputs) gets a unique ID and
-        # device. The ID format {MAC}_{Type}_{name} is kept identical to the
-        # earlier kuralabs/iotawatt_ha release so existing entities are preserved.
         data = self._sensor_data
-        self._attr_unique_id = data.getSensorID()
+        # Fork change: outputs also get a unique ID (and so a device); see
+        # unique_id.py. Inputs are identical to Home Assistant core.
+        self._attr_unique_id = sensor_unique_id(data)
         self._attr_device_info = dr.DeviceInfo(
             connections={(dr.CONNECTION_NETWORK_MAC, data.hub_mac_address)},
             manufacturer="IoTaWatt",
