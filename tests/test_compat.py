@@ -1,9 +1,9 @@
 """Tests for working with an outdated copy of the library."""
 
-from unittest.mock import MagicMock
+from typing import ClassVar
 
-import pytest
 from iotawattpy.sensor import Sensor
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.iotawatt import compat
@@ -16,7 +16,6 @@ from custom_components.iotawatt.compat import (
 from custom_components.iotawatt.const import DOMAIN
 from custom_components.iotawatt.coordinator import IotawattUpdater
 from custom_components.iotawatt.migrate import async_migrate_unique_ids
-
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er, issue_registry as ir
 
@@ -26,10 +25,15 @@ MAC = "A848FAF087FD"
 class _OldApi:
     """Mimics iotawattpy 0.1.0: no includeNonTotalSensors option."""
 
-    created_with: dict = {}
+    created_with: ClassVar[dict] = {}
 
     def __init__(
-        self, device_name, ip, websession, username=None, password=None,
+        self,
+        device_name,
+        ip,
+        websession,
+        username=None,
+        password=None,
         integratedInterval="y",
     ):
         type(self).created_with = {"integratedInterval": integratedInterval}
@@ -48,8 +52,14 @@ class _NewApi(_OldApi):
     """Mimics iotawattpy 0.3.0: accepts includeNonTotalSensors."""
 
     def __init__(
-        self, device_name, ip, websession, username=None, password=None,
-        integratedInterval="y", includeNonTotalSensors=True,
+        self,
+        device_name,
+        ip,
+        websession,
+        username=None,
+        password=None,
+        integratedInterval="y",
+        includeNonTotalSensors=True,
     ):
         type(self).created_with = {
             "integratedInterval": integratedInterval,
@@ -181,7 +191,10 @@ async def test_migration_ok_with_old_library_data(
         (f"{MAC}_Input_solar.wh", "solar_energy"),
     ):
         registry.async_get_or_create(
-            "sensor", DOMAIN, unique_id, config_entry=entry,
+            "sensor",
+            DOMAIN,
+            unique_id,
+            config_entry=entry,
             suggested_object_id=object_id,
         )
     data = filter_sensors({"sensors": _old_library_sensors()})

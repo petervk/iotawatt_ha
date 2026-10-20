@@ -8,16 +8,12 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.iotawatt.const import DOMAIN
 from custom_components.iotawatt.migrate import async_migrate_unique_ids
-from custom_components.iotawatt.sensor import (
-    ENTITY_DESCRIPTION_KEY_MAP,
-    IotaWattSensor,
-)
+from custom_components.iotawatt.sensor import ENTITY_DESCRIPTION_KEY_MAP, IotaWattSensor
 from custom_components.iotawatt.unique_id import (
     input_unique_id,
     output_unique_id,
     sensor_unique_id,
 )
-
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
@@ -105,9 +101,7 @@ def test_entity_gets_id_and_device() -> None:
         ("input_14", f"{MAC}-input-14-Watts"),
         ("output_grid_import", f"{MAC}_Output_grid_import"),
     ):
-        entity = IotaWattSensor(
-            coordinator, key, _description_for(sensors[key])
-        )
+        entity = IotaWattSensor(coordinator, key, _description_for(sensors[key]))
         assert entity.unique_id == expected
         assert entity.device_info is not None
         assert ("mac", MAC) in entity.device_info["connections"]
@@ -124,7 +118,9 @@ async def test_migrates_kuralabs_inputs_only(hass: HomeAssistant) -> None:
     entry.add_to_hass(hass)
     ids = _kuralabs_registry(hass, entry)
     registry = er.async_get(hass)
-    before = {e.entity_id for e in er.async_entries_for_config_entry(registry, entry.entry_id)}
+    before = {
+        e.entity_id for e in er.async_entries_for_config_entry(registry, entry.entry_id)
+    }
 
     async_migrate_unique_ids(hass, entry, _live_sensors())
 
@@ -142,7 +138,9 @@ async def test_migrates_kuralabs_inputs_only(hass: HomeAssistant) -> None:
     assert uid("solar_last") == ids["solar_last"]
     assert uid("grid_import_last") == ids["grid_import_last"]
     assert uid("stale_last") == ids["stale_last"]
-    after = {e.entity_id for e in er.async_entries_for_config_entry(registry, entry.entry_id)}
+    after = {
+        e.entity_id for e in er.async_entries_for_config_entry(registry, entry.entry_id)
+    }
     assert after == before
 
 
@@ -154,15 +152,19 @@ async def test_migration_is_idempotent(hass: HomeAssistant) -> None:
     registry = er.async_get(hass)
 
     async_migrate_unique_ids(hass, entry, _live_sensors())
-    first = {e.entity_id: e.unique_id for e in er.async_entries_for_config_entry(registry, entry.entry_id)}
+    first = {
+        e.entity_id: e.unique_id
+        for e in er.async_entries_for_config_entry(registry, entry.entry_id)
+    }
     async_migrate_unique_ids(hass, entry, _live_sensors())
-    second = {e.entity_id: e.unique_id for e in er.async_entries_for_config_entry(registry, entry.entry_id)}
+    second = {
+        e.entity_id: e.unique_id
+        for e in er.async_entries_for_config_entry(registry, entry.entry_id)
+    }
     assert first == second
 
 
-async def test_collision_is_skipped_and_logged(
-    hass: HomeAssistant, caplog
-) -> None:
+async def test_collision_is_skipped_and_logged(hass: HomeAssistant, caplog) -> None:
     """If the core ID already exists, skip, warn and delete nothing."""
     entry = MockConfigEntry(domain=DOMAIN)
     entry.add_to_hass(hass)
@@ -241,9 +243,13 @@ async def test_entity_ids_unchanged_by_migration(hass: HomeAssistant) -> None:
     entry.add_to_hass(hass)
     _kuralabs_registry(hass, entry)
     registry = er.async_get(hass)
-    before = sorted(e.entity_id for e in er.async_entries_for_config_entry(registry, entry.entry_id))
+    before = sorted(
+        e.entity_id for e in er.async_entries_for_config_entry(registry, entry.entry_id)
+    )
 
     async_migrate_unique_ids(hass, entry, _live_sensors())
 
-    after = sorted(e.entity_id for e in er.async_entries_for_config_entry(registry, entry.entry_id))
+    after = sorted(
+        e.entity_id for e in er.async_entries_for_config_entry(registry, entry.entry_id)
+    )
     assert before == after
