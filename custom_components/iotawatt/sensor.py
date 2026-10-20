@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 import logging
 from typing import override
 
@@ -198,12 +199,25 @@ class IotaWattSensor(CoordinatorEntity[IotawattUpdater], SensorEntity):
                 self.hass.async_create_task(self.async_remove())
             return
 
-        if (begin := self._sensor_data.getBegin()) and (
-            last_reset := dt_util.parse_datetime(begin)
-        ):
-            self._attr_last_reset = last_reset
-
         super()._handle_coordinator_update()
+
+    @property
+    @override
+    def last_reset(self) -> datetime | None:
+        """Return when the integrated energy counter last reset.
+
+        Derived from the coordinator data every time the state is written, so
+        the very first state after Home Assistant starts already carries it.
+        Core only stored it from the first coordinator update onwards, which
+        left the first state without it. Home Assistant's long-term statistics
+        then treat the next state, which has it, as a counter reset and add the
+        sensor's whole value to the statistics sum.
+        """
+        if self.state_class != SensorStateClass.TOTAL:
+            return None
+        if not (begin := self._sensor_data.getBegin()):
+            return None
+        return dt_util.parse_datetime(begin)
 
     @property
     @override

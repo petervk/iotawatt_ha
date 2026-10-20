@@ -12,13 +12,32 @@ Core only gives unique IDs to inputs, which means outputs cannot be renamed, ass
 
 ## What is different from core
 
-The only functional change is that **outputs also get a unique ID and a device**. Everything else is identical to core (`ha-iotawattpy` 0.3.0, config entry `runtime_data`, reactive power device class, guarded updates, no per-period `_wh_last` sensors).
+There are two functional differences. Everything else is identical to core (`ha-iotawattpy` 0.3.0, config entry `runtime_data`, reactive power device class, guarded updates, no per-period `_wh_last` sensors).
+
+1. **Outputs also get a unique ID and a device.** Not expected to be accepted by core, see "Known problems".
+2. **The energy sensors carry `last_reset` on every state, including the first one after a restart.** This fixes a statistics problem in core, see "Improvement over core" below. It is intended to be proposed to core.
+
+Unique IDs:
 
 - **Inputs** use exactly the same unique ID as core: `{mac}-input-{channel}-{unit}`.
 - **Outputs** use `{MAC}_Output_{name}`, the ID format of `kuralabs/iotawatt_ha` 1.0.0. This is the one thing core does not do.
 - All sensors are attached to the IoTaWatt device.
 
 The output ID is based on the output name configured on the IoTaWatt, so renaming an output on the device creates a new entity.
+
+### Improvement over core: statistics no longer inflate after a restart
+
+**The problem in core.** The IoTaWatt energy sensors have the `total` state class, so Home Assistant needs a `last_reset` timestamp on every state to compile their long-term statistics (which feed the Energy dashboard). Core only sets `last_reset` when the first data update arrives, so the **first state written after Home Assistant starts has no `last_reset`**, and the following states do.
+
+Home Assistant's statistics compiler stores `last_reset` for a five-minute window only if the window's last state has it. If the first state after a restart happens to be the last state of its window, the next window starts without a known `last_reset`, sees the attribute appear, and treats it as a counter reset. It then adds the sensor's **entire reading** to the statistics sum. The live sensor values stay correct; only the statistics (and so the Energy dashboard and any statistics-based card) show a large one-off jump, for every energy sensor at once. Whether it happens depends on timing, roughly one restart in ten with the default 30 second update interval.
+
+Seen on a real install after a restart following a 7 minute outage: the solar energy statistics gained about 16.3 kWh in one five-minute window, grid import (which was idle) gained 8.7 kWh, and every other energy sensor gained roughly its own reading. A brand-new installation is affected the same way: its first statistics window is inflated.
+
+**The fix here.** `last_reset` is a property computed from the current coordinator data each time a state is written, instead of a value stored on the first update. Every state, including the first, carries it. It is also only reported for sensors with the `total` state class, which is the only class where Home Assistant allows it.
+
+**How it is tested.** `tests/test_last_reset.py` includes a test that runs Home Assistant's real recorder and statistics compiler through a restart. It fails on the core behaviour (the statistics sum jumps by the sensor's full value) and passes with this fix.
+
+**What the fix does not do.** It prevents new occurrences. It does not repair statistics that were already inflated before you installed it.
 
 ### Breaking changes from `kuralabs/iotawatt_ha` 1.0.0
 
@@ -51,6 +70,7 @@ Home Assistant requires an entity's unique ID to be unique, consistent and immut
 
 - **Renaming a channel or output on the IoTaWatt creates a new entity.** The old entity is left behind, so its history, dashboards, automations, helpers and Energy dashboard entries stop updating until you repoint them. Rename the entity in Home Assistant instead, and avoid renaming channels on the device.
 - **Leaving this fork affects outputs.** Core does not create output sensors, so after switching back to core they become unavailable orphans. Inputs carry over, because they use core's ID format.
+- **Leaving this fork also brings back the statistics problem** described under "Improvement over core", until it is fixed in core.
 - **It replaces the core integration** (same `iotawatt` domain). Home Assistant will log a warning that a custom integration is not tested.
 - **It tracks one core release.** The code is ported from core 2026.10.2 and is not synced automatically. A future Home Assistant release can break it until the fork is updated, and core fixes and improvements arrive only when they are ported.
 - **No support from Home Assistant or the IoTaWatt project.** Do not report problems with this fork to them.
