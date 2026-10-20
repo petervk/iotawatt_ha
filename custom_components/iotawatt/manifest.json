@@ -1,0 +1,13 @@
+{
+  "domain": "iotawatt",
+  "name": "IoTaWatt",
+  "codeowners": ["@petervk", "@gtdiehl", "@jyavenard", "@agners"],
+  "config_flow": true,
+  "documentation": "https://github.com/petervk/iotawatt_ha",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/petervk/iotawatt_ha/issues",
+  "loggers": ["iotawattpy"],
+  "requirements": ["ha-iotawattpy==0.3.0"],
+  "version": "2.0.0"
+}

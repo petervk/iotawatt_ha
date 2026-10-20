@@ -2,31 +2,47 @@
 IoTaWatt integration for Home Assistant
 =======================================
 
-A working version of the IoTaWatt integration for Home Assistant.
+A HACS-installable fork of the Home Assistant core IoTaWatt integration that
+gives **every** sensor, including outputs, a unique ID and a device.
 
-This fixes issue #87182 and enables all inputs and outputs.
+Core only gives unique IDs to inputs, which means outputs cannot be renamed,
+assigned to an area or used in the UI. See `core issue #87182`_.
 
-We had to fork this from the Home Assistant Core because the official
-integration is broken and Home Assistant maintainers are more interested in
-discussing semantics than fixing a broken integration.
+.. _core issue #87182: https://github.com/home-assistant/core/issues/87182
+
+
+What is different from core
+===========================
+
+- Unique ID for every sensor, formatted ``{MAC}_{Type}_{name}``. This matches
+  the ID format of the earlier ``kuralabs/iotawatt_ha`` 1.0.0 release, so
+  entities from that version are preserved when you upgrade.
+- All sensors are attached to the IoTaWatt device.
+- Per-period (``_last``) energy sensors are kept. Core hides them.
+
+Everything else tracks the core integration (``ha-iotawattpy`` 0.3.0, config
+entry ``runtime_data``, reactive power device class, guarded updates).
+
+Note that the ID is based on the channel name configured on the IoTaWatt, so
+renaming a channel on the device creates a new entity.
 
 
 Installing
 ==========
 
-Go to your config directory and execute the following command:
+1. In HACS, add ``https://github.com/petervk/iotawatt_ha`` as a custom
+   repository of type *Integration*.
+2. Download it and restart Home Assistant.
+3. If you already use the core integration, remove your existing IoTaWatt
+   entry first, or migrate from a manual ``custom_components/iotawatt`` copy
+   by deleting that folder before installing through HACS.
 
-::
-
-    mkdir -p custom_components
-    cd custom_components
-    git clone --branch 1.0.0 --depth 1 https://github.com/kuralabs/iotawatt_ha.git iotawatt
+This custom integration uses the same ``iotawatt`` domain as core and replaces
+it entirely. Requires Home Assistant 2026.10.2 or newer.
 
 
 Why
 ===
-
-If you need background on why this was created check:
 
 https://github.com/home-assistant/core/issues/87182
 https://github.com/home-assistant/core/pull/86834#issuecomment-1470576966
@@ -43,9 +59,12 @@ All credits goes to the autors of this integration:
 - Jean-Yves Avenard
 - Charles Garwood
 
+The unique ID change originates from the ``kuralabs/iotawatt_ha`` fork.
+
 An older version of this integration can be found here:
 
 https://github.com/gtdiehl/iotawatt_ha
+https://github.com/kuralabs/iotawatt_ha
 
 
 License
