@@ -19,7 +19,7 @@ from custom_components.iotawatt.migrate import async_migrate_unique_ids
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er, issue_registry as ir
 
-MAC = "A848FAF087FD"
+MAC = "AABBCCDDEEFF"
 
 
 class _OldApi:

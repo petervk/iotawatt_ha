@@ -25,7 +25,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
-MAC = "A848FAF087FD"
+MAC = "AABBCCDDEEFF"
 MIDNIGHT = "2026-10-20T00:00:00"
 
 

@@ -17,7 +17,7 @@ from custom_components.iotawatt.unique_id import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
-MAC = "A848FAF087FD"
+MAC = "AABBCCDDEEFF"
 
 
 def _input(channel: str, name: str, unit: str = "Watts", suffix=None, from_start=False):
