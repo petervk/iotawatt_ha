@@ -1,0 +1,145 @@
+# Weekly check of this fork against Home Assistant core.
+#
+# It does nothing unless a newer stable Home Assistant release exists. If one
+# does, it (1) lists which files of core's iotawatt integration changed since
+# the baseline in .github/core-baseline.txt and (2) runs this repo's tests
+# against that Home Assistant version. If anything changed or a test fails, it
+# opens a GitHub issue (once per Home Assistant version). It never changes code.
+#
+# When the fork has been checked or updated for a newer version, update
+# .github/core-baseline.txt to that version.
+name: Core watch
+
+on:
+  schedule:
+    - cron: "17 12 * * 4" # Thursdays 12:17 UTC (about 8:17 AM Toronto)
+  workflow_dispatch:
+    inputs:
+      baseline:
+        description: "Test only: pretend the baseline is this older version (e.g. 2026.9.0) to exercise the full check. Leave empty normally."
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find the latest stable Home Assistant release
+        id: ver
+        run: |
+          base="${{ inputs.baseline }}"
+          if [ -z "$base" ]; then
+            base=$(tr -d '[:space:]' < .github/core-baseline.txt)
+          fi
+          # Take the highest stable version number (not GitHub's "latest" flag,
+          # which follows publish order and can lag behind patch releases).
+          latest=$( { echo "$base"; gh api "repos/home-assistant/core/releases?per_page=50" \
+            --jq '.[] | select(.prerelease == false and .draft == false) | .tag_name'; } \
+            | grep -E '^[0-9]{4}\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          if [ "$base" = "$latest" ]; then
+            echo "same=true" >> "$GITHUB_OUTPUT"
+            echo "Baseline $base is still the latest release. Nothing to do." | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "same=false" >> "$GITHUB_OUTPUT"
+            echo "New release $latest (baseline $base)." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: List changes in core's iotawatt integration
+        id: diff
+        if: steps.ver.outputs.same == 'false'
+        run: |
+          list() {
+            gh api "repos/home-assistant/core/contents/homeassistant/components/iotawatt?ref=$1" \
+              --jq '.[] | "\(.path) \(.sha)"' | sort
+          }
+          list "${{ steps.ver.outputs.base }}" > base.txt
+          list "${{ steps.ver.outputs.latest }}" > latest.txt
+          if diff -q base.txt latest.txt > /dev/null; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No files changed in core's iotawatt integration." | tee changes.txt
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "Files in core's iotawatt integration that differ between"
+              echo "${{ steps.ver.outputs.base }} and ${{ steps.ver.outputs.latest }} (added, removed or changed):"
+              diff base.txt latest.txt | grep '^[<>]' | awk '{print $2}' | sort -u | sed 's/^/- /'
+              echo
+              echo "Compare: https://github.com/home-assistant/core/compare/${{ steps.ver.outputs.base }}...${{ steps.ver.outputs.latest }}"
+            } | tee changes.txt
+          fi
+          cat changes.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/setup-python@v5
+        if: steps.ver.outputs.same == 'false'
+        with:
+          python-version: "3.14"
+
+      - name: Run the tests against the latest Home Assistant
+        id: tests
+        if: steps.ver.outputs.same == 'false'
+        run: |
+          set +e
+          pip install pytest-homeassistant-custom-component \
+            "$(jq -r '.requirements[0]' custom_components/iotawatt/manifest.json)" > install.log 2>&1
+          if [ $? -ne 0 ]; then
+            echo "result=install_failed" >> "$GITHUB_OUTPUT"
+            tail -n 30 install.log > tests.txt
+            exit 0
+          fi
+          have=$(python -c "import homeassistant.const as c; print(c.__version__)")
+          if [ "$have" != "${{ steps.ver.outputs.latest }}" ]; then
+            echo "result=plugin_behind" >> "$GITHUB_OUTPUT"
+            echo "The test package installs Home Assistant $have, not ${{ steps.ver.outputs.latest }}. It has probably not been released yet; tests were not run against the new version." > tests.txt
+            exit 0
+          fi
+          python -m pytest -q -p no:cacheprovider > tests.txt 2>&1
+          if [ $? -eq 0 ]; then
+            echo "result=passed" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=failed" >> "$GITHUB_OUTPUT"
+          fi
+          tail -n 40 tests.txt
+          {
+            echo
+            echo "Tests: $(tail -n 1 tests.txt)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open an issue if attention is needed
+        if: steps.ver.outputs.same == 'false' && (steps.diff.outputs.changed == 'true' || steps.tests.outputs.result != 'passed')
+        run: |
+          title="Home Assistant ${{ steps.ver.outputs.latest }}: review this fork"
+          existing=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq 'length')
+          if [ "$existing" != "0" ]; then
+            echo "An issue for ${{ steps.ver.outputs.latest }} is already open."
+            exit 0
+          fi
+          {
+            echo "Automatic weekly check against Home Assistant core."
+            echo
+            echo "- Baseline: ${{ steps.ver.outputs.base }}"
+            echo "- Latest stable release: ${{ steps.ver.outputs.latest }}"
+            echo "- Test result: ${{ steps.tests.outputs.result }}"
+            echo
+            cat changes.txt
+            echo
+            echo '<details><summary>Test output (last lines)</summary>'
+            echo
+            echo '```'
+            tail -n 40 tests.txt
+            echo '```'
+            echo
+            echo '</details>'
+            echo
+            echo "Next step: review the changes (ask Claude to check this fork against core ${{ steps.ver.outputs.latest }}), then update .github/core-baseline.txt."
+          } > issue.md
+          gh issue create --title "$title" --body-file issue.md
