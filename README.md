@@ -70,6 +70,12 @@ An older version of this integration can be found here:
 
 ## License
 
+This project is licensed under the Apache License, Version 2.0. The `LICENSE` file contains the full text.
+
+Modifications Copyright (C) 2026 petervk. Original code copyright remains with its authors (see Credits above); this fork is derived from the Home Assistant core IoTaWatt integration and the `kuralabs/iotawatt_ha` fork, both Apache 2.0.
+
+The standard license notice from the original project:
+
 ```
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
