@@ -10,7 +10,7 @@ from .migrate import async_migrate_unique_ids
 PLATFORMS = [Platform.SENSOR]
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: IotawattConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: IotawattConfigEntry) -> None:
     """Set up iotawatt from a config entry."""
     async_check_library(hass)
     coordinator = IotawattUpdater(hass, entry)
@@ -18,9 +18,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: IotawattConfigEntry) -> 
     entry.runtime_data = coordinator
     async_migrate_unique_ids(hass, entry, coordinator.data["sensors"])
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: IotawattConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: IotawattConfigEntry) -> None:
     """Unload a config entry."""
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    await hass.config_entries.async_unload_platforms_or_raise(entry, PLATFORMS)
