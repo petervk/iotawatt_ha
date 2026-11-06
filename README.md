@@ -4,6 +4,9 @@ A HACS-installable fork of the Home Assistant core IoTaWatt integration that giv
 
 Core only gives unique IDs to inputs, which means outputs cannot be renamed, assigned to an area or used in the UI. See [core issue #87182](https://github.com/home-assistant/core/issues/87182).
 
+> [!IMPORTANT]
+> **Version 2.2.0 and newer REQUIRE Home Assistant 2026.11.0 or newer.** Do not install or update to it on an older Home Assistant: the integration will fail to load. On 2026.10.x, stay on version 2.1.2.
+
 > [!WARNING]
 > **This fork deliberately does something Home Assistant core does not allow, and the change is not expected to ever be accepted into core.** Read the section "Known problems" before installing.
 
@@ -72,7 +75,7 @@ Home Assistant requires an entity's unique ID to be unique, consistent and immut
 - **Leaving this fork affects outputs.** Core does not create output sensors, so after switching back to core they become unavailable orphans. Inputs carry over, because they use core's ID format.
 - **Leaving this fork also brings back the statistics problem** described under "Improvement over core", until it is fixed in core.
 - **It replaces the core integration** (same `iotawatt` domain). Home Assistant will log a warning that a custom integration is not tested.
-- **It tracks one core release.** The code is ported from core 2026.10.2 and is not synced automatically. A future Home Assistant release can break it until the fork is updated, and core fixes and improvements arrive only when they are ported.
+- **It tracks one core release.** The code is ported from core 2026.11.0 and is not synced automatically. A future Home Assistant release can break it until the fork is updated, and core fixes and improvements arrive only when they are ported.
 - **No support from Home Assistant or the IoTaWatt project.** Do not report problems with this fork to them.
 - **Limited testing.** It is maintained for one home setup. Back up before installing, and keep a copy of any previous `custom_components/iotawatt` folder so you can roll back.
 - **It needs a recent Python.** The `ha-iotawattpy` 0.3.0 library requires Python 3.13.
@@ -100,7 +103,7 @@ A proper fix would be a persistent ID for each output in the IoTaWatt firmware. 
 2.  Download it and restart Home Assistant.
 3.  If you already use the core integration, remove your existing IoTaWatt entry first, or migrate from a manual `custom_components/iotawatt` copy by deleting that folder before installing through HACS.
 
-This custom integration uses the same `iotawatt` domain as core and replaces it entirely. Requires Home Assistant 2026.10.2 or newer.
+This custom integration uses the same `iotawatt` domain as core and replaces it entirely. **Requires Home Assistant 2026.11.0 or newer** (version 2.2.0 and later). On Home Assistant 2026.10.x, use version 2.1.2.
 
 ## Why
 

@@ -1,6 +1,6 @@
 # Runs on every pull request and every push to main.
 # - tests: the pytest suite on Python 3.14 against the newest Home Assistant
-#   that pytest-homeassistant-custom-component supports.
+#   that pytest-homeassistant supports.
 # - hassfest: Home Assistant's own validation of a custom integration
 #   (manifest, translations, imports).
 # - hacs: HACS repository validation (hacs.json, structure, topics).
