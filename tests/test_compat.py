@@ -4,7 +4,7 @@ from typing import ClassVar
 
 from iotawattpy.sensor import Sensor
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.iotawatt import compat
 from custom_components.iotawatt.compat import (

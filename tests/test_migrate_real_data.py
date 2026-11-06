@@ -17,7 +17,7 @@ Shape of the data:
 import logging
 
 from iotawattpy.sensor import Sensor
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.iotawatt.const import DOMAIN
 from custom_components.iotawatt.migrate import async_migrate_unique_ids

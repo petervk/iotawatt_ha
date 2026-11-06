@@ -89,7 +89,7 @@ jobs:
         if: steps.ver.outputs.same == 'false'
         run: |
           set +e
-          pip install pytest-homeassistant-custom-component \
+          pip install "pytest-homeassistant==${{ steps.ver.outputs.latest }}" \
             "$(jq -r '.requirements[0]' custom_components/iotawatt/manifest.json)" > install.log 2>&1
           if [ $? -ne 0 ]; then
             echo "result=install_failed" >> "$GITHUB_OUTPUT"
@@ -99,7 +99,7 @@ jobs:
           have=$(python -c "import homeassistant.const as c; print(c.__version__)")
           if [ "$have" != "${{ steps.ver.outputs.latest }}" ]; then
             echo "result=plugin_behind" >> "$GITHUB_OUTPUT"
-            echo "The test package installs Home Assistant $have, not ${{ steps.ver.outputs.latest }}. It has probably not been released yet; tests were not run against the new version." > tests.txt
+            echo "The test package installs Home Assistant $have, not ${{ steps.ver.outputs.latest }}. pytest-homeassistant for that version is probably not released yet; tests were not run against the new version." > tests.txt
             exit 0
           fi
           python -m pytest -q -p no:cacheprovider > tests.txt 2>&1

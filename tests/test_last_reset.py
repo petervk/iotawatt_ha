@@ -12,8 +12,8 @@ from unittest.mock import MagicMock, patch
 
 from iotawattpy.sensor import Sensor
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
-from pytest_homeassistant_custom_component.components.recorder.common import (
+from pytest_homeassistant.common import MockConfigEntry
+from pytest_homeassistant.components.recorder.common import (
     async_wait_recording_done,
     do_adhoc_statistics,
     statistics_during_period,
