@@ -4,6 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 import logging
+from time import monotonic
 from typing import override
 
 from iotawattpy.sensor import Sensor
@@ -33,9 +34,13 @@ from homeassistant.util import dt as dt_util
 
 from .const import VOLT_AMPERE_REACTIVE_HOURS
 from .coordinator import IotawattConfigEntry, IotawattUpdater
+from .limits import is_plausible
 from .unique_id import sensor_unique_id
 
 _LOGGER = logging.getLogger(__name__)
+
+# Seconds between two warnings about rejected readings of the same sensor.
+REJECTION_WARNING_INTERVAL = 3600
 
 
 @dataclass(frozen=True)
@@ -176,6 +181,7 @@ class IotaWattSensor(CoordinatorEntity[IotawattUpdater], SensorEntity):
             model="IoTaWatt",
         )
         self.entity_description = entity_description
+        self._last_rejection_warning: float | None = None
 
     @property
     def _sensor_data(self) -> Sensor:
@@ -233,8 +239,33 @@ class IotaWattSensor(CoordinatorEntity[IotawattUpdater], SensorEntity):
     @property
     @override
     def native_value(self) -> StateType:
-        """Return the state of the sensor."""
-        if func := self.entity_description.value:
-            return func(self._sensor_data.getValue())
+        """Return the state of the sensor.
 
-        return self._sensor_data.getValue()
+        An impossible reading (see ``limits.py``) is not passed on: the sensor
+        is unknown until the next good poll.
+        """
+        data = self._sensor_data
+        raw = data.getValue()
+        if not is_plausible(data.getUnit(), raw):
+            self._warn_rejected(data.getUnit(), raw)
+            return None
+
+        if func := self.entity_description.value:
+            return func(raw)
+
+        return raw
+
+    def _warn_rejected(self, unit: str, raw: object) -> None:
+        """Log a rejected reading, at most once per hour for each sensor."""
+        now = monotonic()
+        last = self._last_rejection_warning
+        if last is not None and now - last < REJECTION_WARNING_INTERVAL:
+            return
+        self._last_rejection_warning = now
+        _LOGGER.warning(
+            "Ignoring impossible %s reading %r from IoTaWatt sensor %s; "
+            "the sensor is unknown until the next valid reading",
+            unit,
+            raw,
+            self._sensor_data.getName(),
+        )
