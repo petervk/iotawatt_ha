@@ -15,10 +15,11 @@ Core only gives unique IDs to inputs, which means outputs cannot be renamed, ass
 
 ## What is different from core
 
-There are two functional differences. Everything else is identical to core (`ha-iotawattpy` 0.3.0, config entry `runtime_data`, reactive power device class, guarded updates, no per-period `_wh_last` sensors).
+There are three functional differences. Everything else is identical to core (`ha-iotawattpy` 0.3.0, config entry `runtime_data`, reactive power device class, guarded updates, no per-period `_wh_last` sensors).
 
 1. **Outputs also get a unique ID and a device.** Not expected to be accepted by core, see "Known problems".
 2. **The energy sensors carry `last_reset` on every state, including the first one after a restart.** This fixes a statistics problem in core, see "Improvement over core" below. It is intended to be proposed to core.
+3. **Impossible readings are rejected: the sensor shows unknown instead of the garbage number.** See "Rejecting impossible readings" below. The limits are a guess.
 
 Unique IDs:
 
@@ -41,6 +42,36 @@ Seen on a real install after a restart following a 7 minute outage: the solar en
 **How it is tested.** `tests/test_last_reset.py` includes a test that runs Home Assistant's real recorder and statistics compiler through a restart. It fails on the core behaviour (the statistics sum jumps by the sensor's full value) and passes with this fix.
 
 **What the fix does not do.** It prevents new occurrences. It does not repair statistics that were already inflated before you installed it.
+
+### Rejecting impossible readings
+
+> [!IMPORTANT]
+> **The limits below are a guess.** They are not IoTaWatt specifications and were not checked against the hardware. They are deliberately set **far beyond any normal reading**, so a healthy installation should never come near them. If you ever see a rejection warning in the log for a reading that was real, please report it, because that means a limit is too low.
+
+**The problem.** An unstable IoTaWatt can return impossible numbers, for example about -1e17 W or 9.7e18 Wh. The integration used to pass these straight through, and they then ruined power graphs, long-term statistics, the Energy dashboard and any helper built on the sensors (sums, Riemann integrals, costs).
+
+**What happens now.** If a reading is beyond the limit for its type, that one sensor reports **unknown** for that update, and a warning is written to the log (at most once an hour per sensor). The next valid reading restores it. Other sensors are not affected. Negative readings stay allowed where they are real, such as power flowing back to the grid.
+
+| Reading | Rejected when | How the limit was chosen (all guesses) |
+| --- | --- | --- |
+| Voltage | above 1,200 V | 600 V as a base number, doubled |
+| Current | above 10,000 A | 5,000 A as a base number, doubled |
+| Power, apparent power, reactive power | absolute value above 10.4 MW | 600 V x 5,000 A x 1.732 (three phase) = 5.2 MW, doubled |
+| Energy (Wh) and reactive energy (VARh) | absolute value above 250 MWh | 5.2 MW for 24 hours = 125 MWh (the energy sensors reset daily), doubled |
+| Frequency | below 0 Hz or above 100 Hz | mains is 50 or 60 Hz |
+| Power factor | absolute value above 1.1 | a real power factor cannot exceed 1 |
+
+The limits are each doubled on their own, so they are **not** consistent with each other as a product: 1,200 V x 10,000 A is much more than 10.4 MW. That does not matter in practice, because the garbage seen so far (around 1e17) is billions of times above every limit.
+
+NaN and infinite values are rejected too. Sensors with no limit (any unit this integration does not know) are left alone.
+
+**What this does not do.**
+- It does not repair statistics that already contain garbage.
+- It does not stop the IoTaWatt from crashing or producing bad data; it only keeps the bad data out of Home Assistant.
+- It does not catch a wrong value that is still inside the limits. A plausible but incorrect reading passes.
+- Helpers built on the sensors (sum groups, Riemann integrals) will see unknown for the affected update. How they treat that depends on their own settings.
+
+The limits live in `custom_components/iotawatt/limits.py` and are covered by `tests/test_limits.py`. The check is kept in its own small module so it could be proposed to core separately from the other changes in this fork.
 
 ### Breaking changes from `kuralabs/iotawatt_ha` 1.0.0
 
