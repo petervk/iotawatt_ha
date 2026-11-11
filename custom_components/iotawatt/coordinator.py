@@ -15,6 +15,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .compat import api_options, filter_sensors
 from .const import CONNECTION_ERRORS
+from .missing import MissingSensorTracker
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,6 +48,7 @@ class IotawattUpdater(DataUpdateCoordinator):
         )
 
         self._last_run: datetime | None = None
+        self.missing = MissingSensorTracker()
 
     def update_last_run(self, last_run: datetime) -> None:
         """Notify coordinator of a sensor last update time."""
@@ -84,4 +86,8 @@ class IotawattUpdater(DataUpdateCoordinator):
         except CONNECTION_ERRORS as err:
             raise UpdateFailed("Connection failed") from err
         self._last_run = None
-        return filter_sensors(self.api.getSensors())
+        data = filter_sensors(self.api.getSensors())
+        # Fork change: see missing.py. Returns a copy that still contains
+        # sensors the device left out of this answer, for a limited time.
+        previous = self.data["sensors"] if self.data else {}
+        return {**data, "sensors": self.missing.merge(previous, data["sensors"])}

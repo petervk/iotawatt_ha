@@ -34,7 +34,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import VOLT_AMPERE_REACTIVE_HOURS
 from .coordinator import IotawattConfigEntry, IotawattUpdater
-from .limits import is_plausible
+from .limits import is_plausible, is_plausible_reset
 from .unique_id import sensor_unique_id
 
 _LOGGER = logging.getLogger(__name__)
@@ -146,6 +146,8 @@ async def async_setup_entry(
     @callback
     def new_data_received():
         """Check for new sensors."""
+        # Forget sensors that are gone, so one that comes back is created again.
+        created.intersection_update(coordinator.data["sensors"])
         entities = [
             _create_entity(key)
             for key in coordinator.data["sensors"]
@@ -182,6 +184,7 @@ class IotaWattSensor(CoordinatorEntity[IotawattUpdater], SensorEntity):
         )
         self.entity_description = entity_description
         self._last_rejection_warning: float | None = None
+        self._last_good_reset: datetime | None = None
 
     @property
     def _sensor_data(self) -> Sensor:
@@ -193,6 +196,12 @@ class IotaWattSensor(CoordinatorEntity[IotawattUpdater], SensorEntity):
     def name(self) -> str | None:
         """Return name of the entity."""
         return self._sensor_data.getName()
+
+    @property
+    @override
+    def available(self) -> bool:
+        """Return False while the device leaves this sensor out of its answer."""
+        return super().available and not self.coordinator.missing.is_missing(self._key)
 
     @callback
     @override
@@ -223,7 +232,27 @@ class IotaWattSensor(CoordinatorEntity[IotawattUpdater], SensorEntity):
             return None
         if not (begin := self._sensor_data.getBegin()):
             return None
-        return dt_util.parse_datetime(begin)
+        # An impossible reset time is not passed on (see ``limits.py``): a
+        # reset time that changes makes the statistics add the sensor's whole
+        # value. The last good one is reported instead; the reading itself is
+        # rejected in ``native_value``.
+        if (reset := self._plausible_reset(begin)) is None:
+            return self._last_good_reset
+        self._last_good_reset = reset
+        return reset
+
+    @staticmethod
+    def _plausible_reset(begin: object) -> datetime | None:
+        """Return the reset time the device reported, or None if impossible."""
+        if not isinstance(begin, str):
+            return None
+        try:
+            reset = dt_util.parse_datetime(begin)
+        except ValueError:
+            return None
+        if not is_plausible_reset(reset, dt_util.utcnow()):
+            return None
+        return reset
 
     @property
     @override
@@ -241,13 +270,22 @@ class IotaWattSensor(CoordinatorEntity[IotawattUpdater], SensorEntity):
     def native_value(self) -> StateType:
         """Return the state of the sensor.
 
-        An impossible reading (see ``limits.py``) is not passed on: the sensor
-        is unknown until the next good poll.
+        An impossible reading or reset time (see ``limits.py``) is not passed
+        on: the sensor is unknown until the next good poll.
         """
         data = self._sensor_data
         raw = data.getValue()
         if not is_plausible(data.getUnit(), raw):
-            self._warn_rejected(data.getUnit(), raw)
+            self._warn_rejected(f"{data.getUnit()} reading", raw)
+            return None
+        # An energy reading that comes with an impossible reset time cannot be
+        # trusted either.
+        if (
+            self.state_class == SensorStateClass.TOTAL
+            and (begin := data.getBegin())
+            and self._plausible_reset(begin) is None
+        ):
+            self._warn_rejected("reset time", begin)
             return None
 
         if func := self.entity_description.value:
@@ -255,7 +293,7 @@ class IotaWattSensor(CoordinatorEntity[IotawattUpdater], SensorEntity):
 
         return raw
 
-    def _warn_rejected(self, unit: str, raw: object) -> None:
+    def _warn_rejected(self, what: str, raw: object) -> None:
         """Log a rejected reading, at most once per hour for each sensor."""
         now = monotonic()
         last = self._last_rejection_warning
@@ -263,9 +301,9 @@ class IotaWattSensor(CoordinatorEntity[IotawattUpdater], SensorEntity):
             return
         self._last_rejection_warning = now
         _LOGGER.warning(
-            "Ignoring impossible %s reading %r from IoTaWatt sensor %s; "
+            "Ignoring impossible %s %r from IoTaWatt sensor %s; "
             "the sensor is unknown until the next valid reading",
-            unit,
+            what,
             raw,
             self._sensor_data.getName(),
         )
