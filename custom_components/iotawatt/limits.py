@@ -24,6 +24,7 @@ not twice). They are generous on purpose: the garbage seen so far is around
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 import math
 
 MAX_VOLTS = 1_200.0
@@ -33,6 +34,13 @@ MAX_ENERGY = 250_000_000.0  # Wh and VARh
 MIN_HZ = 0.0
 MAX_HZ = 100.0
 MAX_ABS_POWER_FACTOR = 1.1  # a real power factor cannot exceed 1
+
+# The energy sensors reset daily, so the reset time the IoTaWatt reports is its
+# own local midnight: at most 24 hours ago on its clock. The IoTaWatt's time
+# zone is not known here, and local time can be up to 12 hours behind or 14
+# hours ahead of UTC, so the window is wide. THESE ARE GUESSES TOO.
+MAX_RESET_AGE = timedelta(hours=48)
+MAX_RESET_AHEAD = timedelta(hours=15)
 
 # Largest allowed absolute value per IoTaWatt unit. Negative readings stay
 # allowed where they are real (for example power flowing back to the grid).
@@ -67,3 +75,17 @@ def is_plausible(unit: str, value: float | None) -> bool:
     if (limit := _MAX_ABS.get(unit)) is None:
         return True
     return abs(number) <= limit
+
+
+def is_plausible_reset(reset: datetime | None, now: datetime) -> bool:
+    """Return False when a reported reset time cannot be right.
+
+    ``reset`` is the start of the energy sensors' counting period as reported
+    by the IoTaWatt (usually without a time zone); ``now`` must be time zone
+    aware. ``None`` (the text could not be read as a time) is not plausible.
+    """
+    if reset is None:
+        return False
+    if reset.tzinfo is None:
+        reset = reset.replace(tzinfo=UTC)
+    return now - MAX_RESET_AGE <= reset <= now + MAX_RESET_AHEAD
