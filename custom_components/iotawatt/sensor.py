@@ -146,6 +146,8 @@ async def async_setup_entry(
     @callback
     def new_data_received():
         """Check for new sensors."""
+        # Forget sensors that are gone, so one that comes back is created again.
+        created.intersection_update(coordinator.data["sensors"])
         entities = [
             _create_entity(key)
             for key in coordinator.data["sensors"]
@@ -193,6 +195,12 @@ class IotaWattSensor(CoordinatorEntity[IotawattUpdater], SensorEntity):
     def name(self) -> str | None:
         """Return name of the entity."""
         return self._sensor_data.getName()
+
+    @property
+    @override
+    def available(self) -> bool:
+        """Return False while the device leaves this sensor out of its answer."""
+        return super().available and not self.coordinator.missing.is_missing(self._key)
 
     @callback
     @override
