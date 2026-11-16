@@ -30,6 +30,15 @@ MIDNIGHT = "2026-10-20T00:00:00"
 
 
 @pytest.fixture(autouse=True)
+def on_the_day_of_the_test_data(freezer) -> None:
+    """Set the clock to the day the test data is from.
+
+    A reset time far from the current time is rejected as impossible.
+    """
+    freezer.move_to("2026-10-20 16:00:00+00:00")
+
+
+@pytest.fixture(autouse=True)
 def auto_enable_custom_integrations():
     """Replace the conftest fixture of the same name.
 
