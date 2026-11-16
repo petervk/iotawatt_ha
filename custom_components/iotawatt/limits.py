@@ -7,8 +7,8 @@ into the Energy dashboard, long-term statistics and any helper built on top.
 THE LIMITS BELOW ARE A GUESS. They are deliberately set far beyond any real
 reading, so that a normal installation never comes close to them. They are
 not IoTaWatt specifications and were not checked against the hardware. They
-start from two round base numbers (see README, "Rejecting impossible
-readings"), and every limit is then doubled to leave room for unusual
+start from two round base numbers (see docs/fixes.md, "Rejecting
+impossible readings"), and every limit is then doubled to leave room for unusual
 installations:
 
 * voltage: 600 V base, doubled                                      -> 1,200 V

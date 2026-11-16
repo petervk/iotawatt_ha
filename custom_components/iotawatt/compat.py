@@ -33,7 +33,10 @@ ISSUE_ID = "outdated_library"
 
 OPTION = "includeNonTotalSensors"
 
-README_URL = "https://github.com/petervk/iotawatt_ha#outdated-library-installs-that-started-from-kuralabsiotawatt_ha"
+README_URL = (
+    "https://github.com/petervk/iotawatt_ha/blob/main/docs/migrating-from-kuralabs.md"
+    "#outdated-library"
+)
 
 
 def library_supports_option() -> bool:
@@ -69,7 +72,7 @@ def async_check_library(hass: HomeAssistant) -> None:
         return
     _LOGGER.warning(
         "An outdated IoTaWatt library (the old 'iotawattpy' package) is loaded. "
-        "The integration is working around it; see the README to remove it"
+        "The integration is working around it; see the migration guide to remove it"
     )
     ir.async_create_issue(
         hass,
