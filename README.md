@@ -33,7 +33,7 @@ Requires Home Assistant 2026.11 or newer.
 
 1. As an administrator, go to **Settings → Marketplace** and select **Add from link**.
 2. Enter `https://github.com/petervk/iotawatt_ha` and select **Add**. If asked for the type, choose *Integration*.
-3. Open **IoTaWatt (unique IDs)** and select **Install**. This integration replaces the built-in IoTaWatt integration (it uses the same `iotawatt` domain), and Home Assistant asks you to confirm that.
+3. Open **IoTaWatt (unique IDs + other fixes)** and select **Install**. This integration replaces the built-in IoTaWatt integration (it uses the same `iotawatt` domain), and Home Assistant asks you to confirm that.
 4. Restart Home Assistant when asked.
 5. If you are not already using IoTaWatt, add it under **Settings → Devices & services → Add integration**.
 
