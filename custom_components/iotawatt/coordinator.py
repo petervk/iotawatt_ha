@@ -1,5 +1,6 @@
 """IoTaWatt DataUpdateCoordinator."""
 
+import asyncio
 from datetime import datetime, timedelta
 import logging
 from typing import override
@@ -21,6 +22,10 @@ _LOGGER = logging.getLogger(__name__)
 
 # Matches iotwatt data log interval
 REQUEST_REFRESH_DEFAULT_COOLDOWN = 5
+
+# Fork change: a failed request is tried once more before the poll fails
+# (see docs/fixes.md). Seconds to wait before that second try.
+RETRY_DELAY = 2
 
 type IotawattConfigEntry = ConfigEntry[IotawattUpdater]
 
@@ -84,7 +89,12 @@ class IotawattUpdater(DataUpdateCoordinator):
         try:
             await self.api.update(lastUpdate=self._last_run)
         except CONNECTION_ERRORS as err:
-            raise UpdateFailed("Connection failed") from err
+            _LOGGER.debug("IoTaWatt request failed, trying once more: %r", err)
+            await asyncio.sleep(RETRY_DELAY)
+            try:
+                await self.api.update(lastUpdate=self._last_run)
+            except CONNECTION_ERRORS as retry_err:
+                raise UpdateFailed("Connection failed") from retry_err
         self._last_run = None
         data = filter_sensors(self.api.getSensors())
         # Fork change: see missing.py. Returns a copy that still contains
