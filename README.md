@@ -26,6 +26,7 @@ These fixes are not tied to the output IDs. Details, limits and tests are in [do
 - **Statistics no longer jump after a restart.** The built-in integration can add an energy sensor's whole reading to its statistics after a restart, causing a one-off spike on the Energy dashboard. Here every energy reading carries its reset time (`last_reset`), including the first one after a restart.
 - **Impossible readings are ignored.** An unstable IoTaWatt can send values such as -1e17 W. Readings far beyond any real value, and energy readings with an impossible reset time, make the sensor show *unknown* for that update instead of a garbage number.
 - **Sensors that briefly disappear are kept.** If the IoTaWatt leaves a sensor out of one answer, the sensor shows *unavailable* instead of being deleted. It is removed only if it stays missing for about 5 minutes.
+- **One retry before sensors go unavailable.** If an update from the IoTaWatt fails, it is tried once more after 2 seconds, so one dropped request no longer makes every sensor unavailable for 30 seconds.
 
 ## Installing
 
